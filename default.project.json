@@ -1,0 +1,22 @@
+{
+  "name": "NeonBackrooms",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Config": { "$path": "src/shared/Config.lua" }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "ReviveHandler": { "$path": "src/server/ReviveHandler.server.lua" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "RevivePrompt": { "$path": "src/client/RevivePrompt.client.lua" },
+        "SprintPass": { "$path": "src/client/SprintPass.client.lua" }
+      }
+    }
+  }
+}
