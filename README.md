@@ -11,19 +11,32 @@ Roblox-игра в жанре лиминального хоррора (Backrooms
 ├── default.project.json        -- конфиг Rojo
 └── src/
     ├── shared/
-    │   └── Config.lua              -- ModuleScript → ReplicatedStorage.Config (все ID монетизации тут)
+    │   └── Config.lua              -- ModuleScript → ReplicatedStorage.Config (ID монетизации + настройки карты)
     ├── server/
-    │   └── ReviveHandler.server.lua -- Script → ServerScriptService (обработка покупок, Revive)
+    │   ├── ReviveHandler.server.lua -- Script → ServerScriptService (обработка покупок, Revive)
+    │   └── MapBuilder.server.lua    -- Script → ServerScriptService (СТРОИТ ВЕСЬ УРОВЕНЬ КОДОМ)
     ├── client/
     │   ├── RevivePrompt.client.lua  -- LocalScript → StarterPlayerScripts (окно покупки после смерти)
     │   └── SprintPass.client.lua    -- LocalScript → StarterPlayerScripts (Shift = спринт для владельцев пасса)
-    └── manual/                      -- НЕ синкается Rojo! вставляешь руками в модели
+    └── manual/                      -- НЕ синкается Rojo! (старый ручной режим, опционально)
         ├── EntityAI.server.lua      -- Script внутрь модели монстра
         └── ExitDoor.server.lua      -- Script внутрь Part-выхода
 ```
 
+## Авто-постройка карты (главное!)
+
+`MapBuilder.server.lua` строит **весь уровень кодом** при запуске сервера: зал,
+стены, потолок с лампами, тёмное освещение + туман (Atmosphere/Haze), спавн, монстра
+с красными неоновыми глазами и светящийся выход. Руками в Studio карту строить
+**не нужно** — просто синкни код и жми **Play**.
+
+Управляется через `src/shared/Config.lua`:
+- `AutoBuildMap = true` — карта строится сама (по умолчанию).
+- `AutoBuildMap = false` — ничего не строится, собираешь руками (чеклист «Ручной режим» ниже).
+- `MonsterSpeed` — скорость монстра. `AmbientSoundId` — гул ламп (вставь `rbxassetid://...`, необязательно).
+
 > Папка `src/manual/` намеренно не указана в `default.project.json`, поэтому Rojo
-> её не переносит. Эти скрипты вставляешь в Studio руками (в модель монстра и в Part-выход).
+> её не переносит. Эти скрипты нужны только если делаешь карту руками (`AutoBuildMap = false`).
 
 ## Как синкнуть в Studio
 
@@ -33,7 +46,9 @@ Roblox-игра в жанре лиминального хоррора (Backrooms
 3. В Studio: вкладка **Rojo** → **Connect**. Скрипты появятся в дереве автоматически.
 4. Файлы из `src/manual/` Rojo НЕ переносит — вставляешь руками (см. ниже).
 
-## Ручные шаги в Studio
+## Ручной режим в Studio (только если `AutoBuildMap = false`)
+
+> При `AutoBuildMap = true` (по умолчанию) всё ниже делает код сам — пропускай.
 
 ### Карта и атмосфера
 - [ ] Baseplate → зал из Part: пол (жёлто-бежевый `#C2B280`, SmoothPlastic),

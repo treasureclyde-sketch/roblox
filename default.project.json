@@ -8,7 +8,8 @@
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "ReviveHandler": { "$path": "src/server/ReviveHandler.server.lua" }
+      "ReviveHandler": { "$path": "src/server/ReviveHandler.server.lua" },
+      "MapBuilder": { "$path": "src/server/MapBuilder.server.lua" }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",
