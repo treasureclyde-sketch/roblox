@@ -4,12 +4,15 @@
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
-      "Config": { "$path": "src/shared/Config.lua" }
+      "Config": { "$path": "src/shared/Config.lua" },
+      "VerityDialogue": { "$path": "src/shared/VerityDialogue.lua" }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "ReviveHandler": { "$path": "src/server/ReviveHandler.server.lua" },
-      "MapBuilder": { "$path": "src/server/MapBuilder.server.lua" }
+      "MapBuilder": { "$path": "src/server/MapBuilder.server.lua" },
+      "DayService": { "$path": "src/server/DayService.lua" },
+      "EntityController": { "$path": "src/server/EntityController.server.lua" }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",

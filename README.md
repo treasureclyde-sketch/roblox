@@ -1,8 +1,50 @@
 # Neon Backrooms: Level 0
 
-Roblox-игра в жанре лиминального хоррора (Backrooms-style) с монетизацией.
-Код синхронизируется в Roblox Studio через [Rojo](https://rojo.space). Карту и
-монетизацию доделываешь вручную в Studio (см. чеклист ниже).
+Roblox-игра в жанре лиминального хоррора (Backrooms-style) с монетизацией и
+сюжетным энтити, который звереет со временем. Код синкается в Roblox Studio через
+[Rojo](https://rojo.space). Карту строит код сам; тебе остаётся вставить свои
+модели и настроить монетизацию.
+
+## Главная фишка — энтити **Verity**
+
+Verity — твой «проводник», который меняется в зависимости от того, сколько **дней**
+игрок провёл в Бэкрумс (счётчик сохраняется между заходами, виден в лидерборде):
+
+| День | Стадия | Поведение |
+|------|--------|-----------|
+| 1 | 🙂 **friendly** | добрый парящий шар, парит рядом, **даёт подсказки** к выходу |
+| 2 | 😐 **uneasy** | тревожный, подсказки мутные, тон злее, цвет холоднее |
+| 3+ | 😈 **hostile** | **МЕНЯЕТ модель на злую**, преследует и убивает касанием |
+
+Плюс **Pirate Clark** — враждебный энтити с 1-го дня: преследует и убивает.
+
+Реплики Verity лежат в `src/shared/VerityDialogue.lua` — правь их как хочешь.
+Пороги дней (`UneasyDay`, `HostileDay`), скорости и дистанции — в `src/shared/Config.lua`.
+
+## Как подключить СВОИ модели (Verity злая, Pirate Clark и т.д.)
+
+3D-модели нельзя затащить из Google Drive в код — они живут внутри Studio как
+ассеты. Поэтому схема такая:
+
+1. Импортируй модель в Studio (меш/риг → собери в один **Model**).
+2. В **ReplicatedStorage** создай папку с именем **`Entities`** (руками, один раз).
+3. Положи туда модели с **ТОЧНО** такими именами:
+   - **`VerityFriendly`** — добрый/тревожный шар (день 1–2). Если это просто меш
+     без Humanoid — движок будет её «парить» за игроком.
+   - **`VerityEvil`** — злая форма (день 3+). Сделай это **Humanoid-риг**
+     (Humanoid + HumanoidRootPart, `PrimaryPart = HumanoidRootPart`) — тогда она
+     будет ходить и гнаться. Анимацию навесишь сам на риг.
+   - **`PirateClark`** — враждебный энтити. Тоже Humanoid-риг.
+4. Всё. Движок сам клонирует модель и подключает к ней логику (настроение,
+   преследование, убийство касанием, реплики).
+
+> Папку `Entities` создавай **руками в Studio**, НЕ через Rojo — иначе синк может
+> затереть вложенные модели. Rojo управляет только тем, что описано в
+> `default.project.json`.
+
+**Пока моделей нет** — движок строит процедурные заглушки (шар + блочные риги с
+красными глазами), так что игра полностью играбельна уже сейчас, а твои модели
+встанут на место без единой правки кода.
 
 ## Структура
 
@@ -11,76 +53,64 @@ Roblox-игра в жанре лиминального хоррора (Backrooms
 ├── default.project.json        -- конфиг Rojo
 └── src/
     ├── shared/
-    │   └── Config.lua              -- ModuleScript → ReplicatedStorage.Config (ID монетизации + настройки карты)
+    │   ├── Config.lua               -- ID монетизации + все настройки игры
+    │   └── VerityDialogue.lua       -- реплики Verity по стадиям
     ├── server/
-    │   ├── ReviveHandler.server.lua -- Script → ServerScriptService (обработка покупок, Revive)
-    │   └── MapBuilder.server.lua    -- Script → ServerScriptService (СТРОИТ ВЕСЬ УРОВЕНЬ КОДОМ)
+    │   ├── ReviveHandler.server.lua -- обработка покупок, Revive после смерти
+    │   ├── MapBuilder.server.lua    -- строит зал/свет/туман/спавн/выход
+    │   ├── DayService.lua           -- счётчик дней (DataStore) + стадия настроения
+    │   └── EntityController.server.lua -- ВСЯ логика энтити (Verity + Pirate Clark)
     ├── client/
-    │   ├── RevivePrompt.client.lua  -- LocalScript → StarterPlayerScripts (окно покупки после смерти)
-    │   └── SprintPass.client.lua    -- LocalScript → StarterPlayerScripts (Shift = спринт для владельцев пасса)
-    └── manual/                      -- НЕ синкается Rojo! (старый ручной режим, опционально)
-        ├── EntityAI.server.lua      -- Script внутрь модели монстра
-        └── ExitDoor.server.lua      -- Script внутрь Part-выхода
+    │   ├── RevivePrompt.client.lua  -- окно покупки Revive после смерти
+    │   └── SprintPass.client.lua    -- Shift = спринт для владельцев пасса
+    └── manual/                      -- НЕ синкается Rojo (старый ручной режим, опционально)
+        ├── EntityAI.server.lua
+        └── ExitDoor.server.lua
 ```
-
-## Авто-постройка карты (главное!)
-
-`MapBuilder.server.lua` строит **весь уровень кодом** при запуске сервера: зал,
-стены, потолок с лампами, тёмное освещение + туман (Atmosphere/Haze), спавн, монстра
-с красными неоновыми глазами и светящийся выход. Руками в Studio карту строить
-**не нужно** — просто синкни код и жми **Play**.
-
-Управляется через `src/shared/Config.lua`:
-- `AutoBuildMap = true` — карта строится сама (по умолчанию).
-- `AutoBuildMap = false` — ничего не строится, собираешь руками (чеклист «Ручной режим» ниже).
-- `MonsterSpeed` — скорость монстра. `AmbientSoundId` — гул ламп (вставь `rbxassetid://...`, необязательно).
-
-> Папка `src/manual/` намеренно не указана в `default.project.json`, поэтому Rojo
-> её не переносит. Эти скрипты нужны только если делаешь карту руками (`AutoBuildMap = false`).
 
 ## Как синкнуть в Studio
 
-1. Установи Rojo: плагин **Rojo** в Studio (вкладка Plugins → Manage Plugins) + CLI
-   (`cargo install rojo`, или скачай бинарник с [rojo.space](https://rojo.space)).
-2. В корне проекта запусти: `rojo serve`
-3. В Studio: вкладка **Rojo** → **Connect**. Скрипты появятся в дереве автоматически.
-4. Файлы из `src/manual/` Rojo НЕ переносит — вставляешь руками (см. ниже).
+1. Поставь Rojo: плагин **Rojo** в Studio (Plugins → Manage Plugins) + CLI
+   (`cargo install rojo` или бинарник с [rojo.space](https://rojo.space)).
+2. В корне проекта: `rojo serve`
+3. В Studio: вкладка **Rojo** → **Connect**. Скрипты появятся в дереве.
+4. Жми **Play** — зал, свет, Verity и Pirate Clark уже на месте.
 
-## Ручной режим в Studio (только если `AutoBuildMap = false`)
+## Настройки (`src/shared/Config.lua`)
 
-> При `AutoBuildMap = true` (по умолчанию) всё ниже делает код сам — пропускай.
+- `AutoBuildMap` — `true`: зал/свет/выход строит код; `false`: строишь руками (`src/manual/`).
+- `UneasyDay` / `HostileDay` — на какой день Verity тревожная / злая (по умолч. 2 / 3).
+- `IncrementDayOnJoin` — каждый заход = +1 день (так «накручивается» прогрессия).
+- `HostileSpeed`, `PirateClarkSpeed`, `VerityFollowDist`, `VeritySpeakRange` и т.д.
+- `ReviveProductId`, `SprintPassId` — ID монетизации (впишешь после публикации).
+- `AmbientSoundId` — гул ламп, `rbxassetid://...` (необязательно).
 
-### Карта и атмосфера
-- [ ] Baseplate → зал из Part: пол (жёлто-бежевый `#C2B280`, SmoothPlastic),
-      стены (высокие Part, обои), потолок с панелями света. Всё **Anchored = true**.
-- [ ] Lighting: `Brightness` ≈ 1, `ClockTime` = 0, `Ambient` тёмный.
-- [ ] В Lighting вставить **Atmosphere**, `Density` ≈ 0.4, добавить Haze — мутная дымка.
-- [ ] В потолок — PointLight / SurfaceLight, холодный жёлтый.
-- [ ] В Workspace — Sound с гулом ламп (`Looped = true`, `Playing = true`).
-- [ ] Поставить **SpawnLocation** на старте.
+### Как протестить злую форму, не наигрывая 3 дня
+`IncrementDayOnJoin = true` — каждый повторный заход добавляет день. Либо в
+командной строке Studio (вкладка **Model** → **Command Bar**) принудительно:
+```lua
+require(game.ServerScriptService.DayService).set(game.Players:GetPlayers()[1], 3)
+```
+и Verity на глазах сменит форму на злую.
 
-### Монстр
-- [ ] Вставить риг с Humanoid, назвать модель **Entity**, задать `PrimaryPart = HumanoidRootPart`.
-- [ ] Внутрь модели вставить Script с кодом из `src/manual/EntityAI.server.lua`.
+## Монетизация (на create.roblox.com)
 
-### Выход
-- [ ] Поставить яркий Part-выход в конце, внутрь — Script из `src/manual/ExitDoor.server.lua`.
-- [ ] Дальше поставить пустой Part с именем **NextLevelSpawn**.
-
-### Публикация и монетизация (на create.roblox.com)
 - [ ] File → **Publish to Roblox** (сначала опубликовать, иначе пассы не создать).
-- [ ] Monetization → **Developer Products** → Create "Revive", цена ~20 Robux → скопировать ID.
-- [ ] Monetization → **Passes** → Create "Sprint", цена ~75 Robux → скопировать ID.
-- [ ] Вписать оба ID в `src/shared/Config.lua` (`ReviveProductId`, `SprintPassId`), пересинкнуть.
+- [ ] Monetization → **Developer Products** → "Revive" (~20 Robux) → скопировать ID.
+- [ ] Monetization → **Passes** → "Sprint" (~75 Robux) → скопировать ID.
+- [ ] Вписать оба ID в `Config.lua` (`ReviveProductId`, `SprintPassId`), пересинкнуть.
 
-### Проверка
-- [ ] Play: монстр идёт к игроку, касание убивает.
-- [ ] После смерти всплывает окно покупки Revive.
-- [ ] Касание выхода телепортит на NextLevelSpawn.
-- [ ] (если куплен Sprint) Shift ускоряет.
+> DataStore (счётчик дней) в Studio работает только если включить
+> **Game Settings → Security → Enable Studio Access to API Services**. Без него игра
+> не падает, но прогресс дней в Studio не сохраняется (на боевом сервере — сохраняется).
+
+## Ручной режим карты (только если `AutoBuildMap = false`)
+
+Тогда строишь зал сам и вставляешь скрипты из `src/manual/` (EntityAI в модель
+монстра, ExitDoor в Part-выход). При `AutoBuildMap = true` это не нужно.
 
 ## Апгрейды на потом
-- Монстр через **PathfindingService**, чтобы обходил стены.
-- Процедурная генерация комнат вместо ручной.
-- Несколько уровней, мигающий свет, звук шагов монстра для саспенса.
-- Лидерборд «кто дальше прошёл».
+- Монстр через **PathfindingService** (обход стен).
+- Анимации на риги Verity/Clark (AnimationController + Animator).
+- Процедурная генерация комнат, мигающий свет, звук шагов.
+- Несколько уровней Бэкрумс, отдельные энтити на каждом.

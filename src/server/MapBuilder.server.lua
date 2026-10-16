@@ -1,5 +1,6 @@
--- MapBuilder: строит весь уровень кодом при запуске сервера.
--- Зал, стены, потолок с лампами, освещение, туман, спавн, монстр, выход — всё тут.
+-- MapBuilder: строит окружение уровня кодом при запуске сервера.
+-- Зал, стены, потолок с лампами, освещение, туман, спавн, выход — всё тут.
+-- Энтити (Verity, Pirate Clark) строит отдельный EntityController.server.lua.
 -- Выключается флагом Config.AutoBuildMap = false (тогда строишь руками в Studio).
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
@@ -140,90 +141,4 @@ exit.Touched:Connect(function(hitPart)
 	end
 end)
 
--- ===== монстр (Entity) =====
-local monster = Instance.new("Model")
-monster.Name = "Entity"
-
-local mroot = Instance.new("Part")
-mroot.Name = "HumanoidRootPart"
-mroot.Size = Vector3.new(2.5, 6, 1.5)
-mroot.Color = Color3.fromRGB(18, 18, 20)
-mroot.Material = Enum.Material.SmoothPlastic
-mroot.Anchored = false
-mroot.CanCollide = true
-mroot.Parent = monster
-
-local mhead = Instance.new("Part")
-mhead.Name = "Head"
-mhead.Size = Vector3.new(2, 1.8, 1.8)
-mhead.Color = Color3.fromRGB(10, 10, 12)
-mhead.Material = Enum.Material.SmoothPlastic
-mhead.CanCollide = false
-mhead.CFrame = mroot.CFrame * CFrame.new(0, 3.9, 0)
-mhead.Parent = monster
-
--- неоновые «глаза» для саспенса
-for _, dx in ipairs({ -0.5, 0.5 }) do
-	local eye = Instance.new("Part")
-	eye.Shape = Enum.PartType.Ball
-	eye.Size = Vector3.new(0.35, 0.35, 0.35)
-	eye.Color = Color3.fromRGB(255, 40, 40)
-	eye.Material = Enum.Material.Neon
-	eye.CanCollide = false
-	eye.CFrame = mhead.CFrame * CFrame.new(dx, 0.2, -0.9)
-	eye.Parent = monster
-	local w = Instance.new("WeldConstraint")
-	w.Part0, w.Part1 = mhead, eye
-	w.Parent = eye
-end
-
-local wHead = Instance.new("WeldConstraint")
-wHead.Part0, wHead.Part1 = mroot, mhead
-wHead.Parent = mhead
-
-local mhum = Instance.new("Humanoid")
-mhum.WalkSpeed = Config.MonsterSpeed
-mhum.HipHeight = mroot.Size.Y / 2
-mhum.Parent = monster
-
-monster.PrimaryPart = mroot
-monster.Parent = map
-monster:PivotTo(CFrame.new(0, mroot.Size.Y / 2 + mhum.HipHeight, ROOM_L / 4))
-
--- смерть игрока при касании монстра
-local function wireTouchKill(p)
-	p.Touched:Connect(function(hit)
-		local char = hit.Parent
-		local h = char and char:FindFirstChildOfClass("Humanoid")
-		if h and Players:GetPlayerFromCharacter(char) then
-			h.Health = 0
-		end
-	end)
-end
-wireTouchKill(mroot)
-wireTouchKill(mhead)
-
--- преследование ближайшего игрока
-local function nearest()
-	local best, dist = nil, math.huge
-	for _, plr in ipairs(Players:GetPlayers()) do
-		local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-		if hrp then
-			local d = (hrp.Position - mroot.Position).Magnitude
-			if d < dist then best, dist = hrp, d end
-		end
-	end
-	return best
-end
-
-task.spawn(function()
-	while task.wait(0.4) do
-		if mhum.Health <= 0 then break end
-		local target = nearest()
-		if target then
-			mhum:MoveTo(target.Position)
-		end
-	end
-end)
-
-print("[NeonBackrooms] Карта построена кодом (AutoBuildMap = true).")
+print("[NeonBackrooms] Окружение построено кодом (AutoBuildMap = true). Энтити — в EntityController.")
