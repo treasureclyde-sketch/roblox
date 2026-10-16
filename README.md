@@ -21,6 +21,22 @@ Verity — твой «проводник», который меняется в �
 Реплики Verity лежат в `src/shared/VerityDialogue.lua` — правь их как хочешь.
 Пороги дней (`UneasyDay`, `HostileDay`), скорости и дистанции — в `src/shared/Config.lua`.
 
+## Укрытия и защита от Кларка
+
+У игрока есть два способа выжить:
+
+- **🚪 Спрятаться** — по комнате расставлены шкафы (`HidingSpot`). Подойди и нажми
+  **E** (ProximityPrompt). Пока сидишь внутри, у тебя флаг `Hidden` — энтити
+  (и Кларк, и злая Verity) тебя **не видят и не убивают касанием**. Нажми **E** ещё
+  раз, чтобы выйти. Один шкаф — одно место.
+- **🔦 Вспышка** — клавиша **F** (на телефоне — экранная кнопка «Вспышка»). Если
+  Кларк **перед тобой** и в радиусе `ClarkStunRange`, он **оглушается** на
+  `ClarkStunTime` секунд — успеваешь убежать. Запас вспышек ограничен
+  (`FlareCharges`), показан внизу экрана, пополняется при возрождении.
+
+Логика: `HideService.server.lua` (укрытия), `EntityController.server.lua` (оглушение),
+`Defense.client.lua` (ввод + индикатор). Настройки — в `Config.lua`.
+
 ## Как подключить СВОИ модели (Verity злая, Pirate Clark и т.д.)
 
 3D-модели нельзя затащить из Google Drive в код — они живут внутри Studio как
@@ -56,13 +72,15 @@ Verity — твой «проводник», который меняется в �
     │   ├── Config.lua               -- ID монетизации + все настройки игры
     │   └── VerityDialogue.lua       -- реплики Verity по стадиям
     ├── server/
-    │   ├── ReviveHandler.server.lua -- обработка покупок, Revive после смерти
-    │   ├── MapBuilder.server.lua    -- строит зал/свет/туман/спавн/выход
-    │   ├── DayService.lua           -- счётчик дней (DataStore) + стадия настроения
-    │   └── EntityController.server.lua -- ВСЯ логика энтити (Verity + Pirate Clark)
+    │   ├── ReviveHandler.server.lua    -- обработка покупок, Revive после смерти
+    │   ├── MapBuilder.server.lua       -- строит зал/свет/туман/спавн/выход/шкафы
+    │   ├── DayService.lua              -- счётчик дней (DataStore) + стадия настроения
+    │   ├── EntityController.server.lua -- ВСЯ логика энтити (Verity + Pirate Clark + оглушение)
+    │   └── HideService.server.lua      -- укрытия (шкафы, E) + флаг Hidden
     ├── client/
     │   ├── RevivePrompt.client.lua  -- окно покупки Revive после смерти
-    │   └── SprintPass.client.lua    -- Shift = спринт для владельцев пасса
+    │   ├── SprintPass.client.lua    -- Shift = спринт для владельцев пасса
+    │   └── Defense.client.lua       -- вспышка (F / кнопка) + индикатор зарядов
     └── manual/                      -- НЕ синкается Rojo (старый ручной режим, опционально)
         ├── EntityAI.server.lua
         └── ExitDoor.server.lua
@@ -92,6 +110,20 @@ Verity — твой «проводник», который меняется в �
 require(game.ServerScriptService.DayService).set(game.Players:GetPlayers()[1], 3)
 ```
 и Verity на глазах сменит форму на злую.
+
+## Соло / дуо (ВАЖНО для хоррора!)
+
+По умолчанию Roblox набивает один сервер случайными игроками на одной локации —
+для хоррора это плохо. Ограничь через **Studio → File → Game Settings → Places**
+(или на create.roblox.com → Places → Server):
+
+- **Соло (рекомендую для старта):** `Max Players = 1` — каждый один в своём мире.
+- **Дуо:** `Max Players = 2`.
+- **Дуо только с другом:** `Max Players = 2` **+** включить приватные серверы
+  (Game Settings → **Permissions** / VIP Servers) — игрок зовёт друга в свой
+  приватный сервер. (Апгрейд: лобби с `TeleportService:ReserveServer`.)
+
+> `MaxPlayers` задаётся в Game Settings, скриптом его выставить нельзя.
 
 ## Монетизация (на create.roblox.com)
 

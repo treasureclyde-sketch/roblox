@@ -141,4 +141,17 @@ exit.Touched:Connect(function(hitPart)
 	end
 end)
 
+-- ===== шкафы-укрытия (логику навесит HideService по имени "HidingSpot") =====
+local spotCount = Config.HideSpotCount or 0
+for i = 1, spotCount do
+	local z = -ROOM_L / 2 + 14 + (i - 1) * ((ROOM_L - 28) / math.max(1, spotCount - 1))
+	part({
+		Name = "HidingSpot",
+		Size = Vector3.new(4, 7, 3),
+		CFrame = CFrame.new(-ROOM_W / 2 + WALL_T + 1.6, 3.5, z),
+		Color = Color3.fromRGB(70, 48, 32),
+		Material = Enum.Material.WoodPlanks,
+	})
+end
+
 print("[NeonBackrooms] Окружение построено кодом (AutoBuildMap = true). Энтити — в EntityController.")

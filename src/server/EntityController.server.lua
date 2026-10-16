@@ -18,6 +18,19 @@ local Config = require(ReplicatedStorage:WaitForChild("Config"))
 local Dialogue = require(ReplicatedStorage:WaitForChild("VerityDialogue"))
 local DayService = require(ServerScriptService:WaitForChild("DayService"))
 
+-- RemoteEvent для вспышки (клиент жмёт F / кнопку → сервер оглушает Кларка)
+local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+if not remotes then
+	remotes = Instance.new("Folder")
+	remotes.Name = "Remotes"
+	remotes.Parent = ReplicatedStorage
+end
+local defendEvent = Instance.new("RemoteEvent")
+defendEvent.Name = "Defend"
+defendEvent.Parent = remotes
+
+local clarkStunnedUntil = 0 -- os.clock(), до которого Кларк оглушён
+
 -- ============================================================ утилиты
 
 local MOOD_COLOR = {
@@ -83,7 +96,8 @@ local function makeKiller(model)
 			p.Touched:Connect(function(hit)
 				local char = hit.Parent
 				local h = char and char:FindFirstChildOfClass("Humanoid")
-				if h and h.Health > 0 and Players:GetPlayerFromCharacter(char) then
+				local victim = char and Players:GetPlayerFromCharacter(char)
+				if h and h.Health > 0 and victim and not victim:GetAttribute("Hidden") then
 					h.Health = 0
 				end
 			end)
@@ -143,7 +157,8 @@ local function nearestPlayer(pos)
 		local char = plr.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if hrp and hum and hum.Health > 0 then
+		-- спрятавшихся (Hidden) энтити не видят
+		if hrp and hum and hum.Health > 0 and not plr:GetAttribute("Hidden") then
 			local d = (hrp.Position - pos).Magnitude
 			if d < dist then best, bestPlr, dist = hrp, plr, d end
 		end
@@ -305,9 +320,44 @@ end
 
 local function onPlayer(plr)
 	DayService.setup(plr)
+	plr:SetAttribute("Hidden", false)
+	plr:SetAttribute("Flares", Config.FlareCharges)
+	plr.CharacterAdded:Connect(function()
+		-- новая жизнь — сбросить укрытие и пополнить вспышки
+		plr:SetAttribute("Hidden", false)
+		plr:SetAttribute("Flares", Config.FlareCharges)
+	end)
 end
 Players.PlayerAdded:Connect(onPlayer)
 for _, p in ipairs(Players:GetPlayers()) do onPlayer(p) end
+
+-- вспышка: оглушает Кларка, если он перед игроком и в радиусе
+defendEvent.OnServerEvent:Connect(function(plr)
+	local charges = plr:GetAttribute("Flares") or 0
+	if charges <= 0 then return end
+	local char = plr.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	if not (Clark and Clark.primary) then return end
+
+	local toClark = Clark.primary.Position - hrp.Position
+	toClark = Vector3.new(toClark.X, 0, toClark.Z)
+	if toClark.Magnitude > Config.ClarkStunRange then
+		plr:SetAttribute("Flares", charges - 1) -- заряд тратится даже в молоко
+		return
+	end
+	-- Кларк должен быть примерно перед игроком
+	local look = hrp.CFrame.LookVector
+	look = Vector3.new(look.X, 0, look.Z)
+	if look.Magnitude > 0 and toClark.Magnitude > 0 and look.Unit:Dot(toClark.Unit) < 0.2 then
+		plr:SetAttribute("Flares", charges - 1)
+		return
+	end
+
+	plr:SetAttribute("Flares", charges - 1)
+	clarkStunnedUntil = os.clock() + Config.ClarkStunTime
+	say(Clark.primary, "— ГХ-Р-Р... —")
+end)
 
 -- ============================================================ главный цикл
 
@@ -372,9 +422,16 @@ while true do
 
 	-- --- Pirate Clark ---
 	if Clark and Clark.humanoid and Clark.primary then
-		local targetRoot = nearestPlayer(Clark.primary.Position)
-		if targetRoot then
-			Clark.humanoid:MoveTo(targetRoot.Position)
+		if os.clock() < clarkStunnedUntil then
+			-- оглушён вспышкой: замирает на месте
+			Clark.humanoid.WalkSpeed = 0
+			Clark.humanoid:MoveTo(Clark.primary.Position)
+		else
+			Clark.humanoid.WalkSpeed = Config.PirateClarkSpeed
+			local targetRoot = nearestPlayer(Clark.primary.Position)
+			if targetRoot then
+				Clark.humanoid:MoveTo(targetRoot.Position)
+			end
 		end
 	end
 end

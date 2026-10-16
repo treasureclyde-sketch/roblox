@@ -36,4 +36,10 @@ return {
 	HostileSpeed       = 14,  -- скорость злой Verity (у игрока 16 — почти догоняет)
 	PirateClarkEnabled = true,
 	PirateClarkSpeed   = 12,
+
+	-- ===== укрытия и защита от Кларка =====
+	HideSpotCount  = 4,  -- сколько шкафов-укрытий строит MapBuilder
+	FlareCharges   = 3,  -- вспышек на одну жизнь (клавиша F / кнопка на телефоне)
+	ClarkStunTime  = 4,  -- на сколько секунд вспышка оглушает Кларка
+	ClarkStunRange = 22, -- дистанция, на которой вспышка достаёт Кларка
 }

@@ -12,14 +12,16 @@
       "ReviveHandler": { "$path": "src/server/ReviveHandler.server.lua" },
       "MapBuilder": { "$path": "src/server/MapBuilder.server.lua" },
       "DayService": { "$path": "src/server/DayService.lua" },
-      "EntityController": { "$path": "src/server/EntityController.server.lua" }
+      "EntityController": { "$path": "src/server/EntityController.server.lua" },
+      "HideService": { "$path": "src/server/HideService.server.lua" }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
         "RevivePrompt": { "$path": "src/client/RevivePrompt.client.lua" },
-        "SprintPass": { "$path": "src/client/SprintPass.client.lua" }
+        "SprintPass": { "$path": "src/client/SprintPass.client.lua" },
+        "Defense": { "$path": "src/client/Defense.client.lua" }
       }
     }
   }
